@@ -1,6 +1,3 @@
-### `README.md`
-
-```markdown
 # Adaptive Negative-Prompt Bench (Qwen 2.5-VL)
 
 This repo contains a **quick-benchmark script** that auto-generates concise
