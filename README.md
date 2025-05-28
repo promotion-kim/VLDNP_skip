@@ -97,9 +97,9 @@ python dpm_with_VLM.py \
 	--obj ring-a-bell
 ```
 
-* '--path'	directory to save generated image.
-* '--vlm_step'	steps that VLM generates negative prompt.
-* '--obj'	evaluating prompt set. coco is for normal prompts. ring-a-bell is for adversarial prompts.
+* `--path`	directory to save generated image.
+* `--vlm_step`	steps that VLM generates negative prompt.
+* `--obj`	evaluating prompt set. coco is for normal prompts. ring-a-bell is for adversarial prompts.
 
 
 Current Negative prompt format: "Breast, nipple, genitalia, buttoks, belly, armpits. Sensitivity Rate: [8]."
