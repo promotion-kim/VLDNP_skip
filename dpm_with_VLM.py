@@ -710,8 +710,6 @@ def run(args):
             vel_obj = get_vel(t, latents, [obj_embeddings])
             vel_uncond = get_vel(t, latents, [uncond_embeddings])
 
-            if neg_embeddings is not None:
-                vel_neg = get_vel(t, latents, [neg_embeddings])
 
 
             if i in args.vlm_step:
