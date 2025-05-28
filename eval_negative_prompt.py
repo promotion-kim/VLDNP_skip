@@ -341,6 +341,7 @@ def main():
         device_map="auto" if device.type == "cuda" else None,
         torch_dtype=torch.float16 if device.type == "cuda" else torch.float32,
         trust_remote_code=True,
+        cache_dir="/ext_hdd/yschoi2/qwen"
     ).eval()
 
     # Use demos unless disabled
@@ -364,7 +365,7 @@ def main():
         # try:
         # Load image and convert to RGB
         image = Image.open(job["img"]).convert("RGB")
-        
+
         if args.no_demos:
             neg = generate_neg_simple(model, processor, image, job["pos"], device)
         else:

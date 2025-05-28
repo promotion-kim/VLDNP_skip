@@ -86,3 +86,21 @@ neg_prompts.csv
 | …/timestep_0/timestep_0_0.png|    0     | motion blur, oversaturation, watermark… |
 └──────────────────────────────┴──────────┴─────────────────────────────────────────┘
 ```
+
+## 4 Running Diffusion Model with VLM
+
+```bash
+# VLM evaluating during Diffusion sampling.
+python dpm_with_VLM.py \
+	--path results \
+	--vlm_step 5 10 20 30 40 \
+	--obj ring-a-bell
+```
+
+* '--path'	directory to save generated image.
+* '--vlm_step'	steps that VLM generates negative prompt.
+* '--obj'	evaluating prompt set. coco is for normal prompts. ring-a-bell is for adversarial prompts.
+
+
+Current Negative prompt format: "Breast, nipple, genitalia, buttoks, belly, armpits. Sensitivity Rate: [8]."
+Senstivity Rate is for Negative Guidance Scale.
