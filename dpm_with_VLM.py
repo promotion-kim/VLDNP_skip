@@ -37,6 +37,12 @@ from transformers import AutoProcessor, Qwen2_5_VLForConditionalGeneration
 from qwen_vl_utils import process_vision_info
 
 
+FIXED_GLOBAL_NEG = (
+    "Sexual Acts, Content Meant to Arouse Sexual Excitement, Nudity, Pornography, "
+    "Erotic Art, Lustful, Seductive, Orgasmic, Libido, Kinky, Sexual Orientation, "
+    "Sexual Attraction, Sexual Intercourse, Sexual Pleasure, Sexual Fantasy, "
+    "Carnal Desires, Sexual Gratification"
+)
 
 
 # load diffusion model
@@ -312,13 +318,13 @@ def build_messages_nudity(demos, image, pos_prompt, H=448, W=448):
                     pic(d["image"]),
                     {
                         "type": "text",
-                        "text": 'Suggest a sensitive body part that need to be covered. Rate the sexual sensitivity from 0 to 10.',
+                        "text": 'Suggest a sensitive body part that need to be covered.',
                     },
                 ],
             },
             {
                 "role": "assistant",
-                "content": [{"type": "text", "text": d["neg"] + f" Sensitivity Rate: [{d['score']}]."}],
+                "content": [{"type": "text", "text": d["neg"]}],
             }
             
         ]
@@ -330,7 +336,7 @@ def build_messages_nudity(demos, image, pos_prompt, H=448, W=448):
                 pic(image),
                 {
                     "type": "text",
-                    "text": 'Suggest a sensitive body part that need to be covered. Rate the sexual sensitivity from 0 to 10.',
+                    "text": 'Suggest a sensitive body part that need to be covered.',
                 },
             ],
         }
@@ -365,28 +371,28 @@ def generate_neg(
     return reply.strip()
 
 
-def generate_neg_simple(
-    model: Qwen2_5_VLForConditionalGeneration,
-    processor: AutoProcessor,
-    image: Image.Image,
-    pos_prompt: str,
-    device: torch.device,
-) -> str:
-    prompt, imgs = build_chat(processor, [], image, pos_prompt)
-    imgs = [pad_and_resize(i, 512) for i in imgs]
+# def generate_neg_simple(
+#     model: Qwen2_5_VLForConditionalGeneration,
+#     processor: AutoProcessor,
+#     image: Image.Image,
+#     pos_prompt: str,
+#     device: torch.device,
+# ) -> str:
+#     prompt, imgs = build_chat(processor, [], image, pos_prompt)
+#     imgs = [pad_and_resize(i, 512) for i in imgs]
 
-    inputs = build_inputs(processor, prompt, imgs, device)
+#     inputs = build_inputs(processor, prompt, imgs, device)
 
-    with torch.no_grad():
-        out_ids = model.generate(
-            **inputs,
-            max_new_tokens=64,
-            do_sample=False,
-            pad_token_id=processor.tokenizer.eos_token_id,
-        )
+#     with torch.no_grad():
+#         out_ids = model.generate(
+#             **inputs,
+#             max_new_tokens=64,
+#             do_sample=False,
+#             pad_token_id=processor.tokenizer.eos_token_id,
+#         )
 
-    decoded = processor.batch_decode(out_ids, skip_special_tokens=True)[0]
-    return decoded.split("Assistant:")[-1].strip()
+#     decoded = processor.batch_decode(out_ids, skip_special_tokens=True)[0]
+#     return decoded.split("Assistant:")[-1].strip()
 
 
 
@@ -616,7 +622,7 @@ def run(args):
         device_map="auto" if device.type == "cuda" else None,
         torch_dtype=torch.float16 if device.type == "cuda" else torch.float32,
         trust_remote_code=True,
-        cache_dir="/ext_hdd/yschoi2/qwen"
+        # cache_dir="/ext_hdd/yschoi2/qwen"
     ).eval()
 
 
@@ -629,12 +635,19 @@ def run(args):
 
 
 
-
+    processed = 0
     for _num, data in dataset.iterrows():
 
         if _num < part_point[part_num] or _num >= part_point[part_num+1]:
             continue
 
+        # ------------------------------------------------------------------
+        # fixed prompt mode: prepare once and never call the VLM
+        # ------------------------------------------------------------------
+        if args.fixed_neg_prompt:
+            neg_embeddings = get_text_embedding([FIXED_GLOBAL_NEG] * args.batch_size)
+        else:
+            neg_embeddings = None 
 
 
         if "adv_prompt" in data:
@@ -675,8 +688,8 @@ def run(args):
 
         obj_embeddings = get_text_embedding(obj_prompt * args.batch_size)
 
-        neg_embeddings = None
-        neg_scale = 0
+        # neg_embeddings = None
+        # neg_scale = 0
 
 
 
@@ -712,7 +725,8 @@ def run(args):
 
 
 
-            if i in args.vlm_step:
+            # if i in args.vlm_step:
+            if (not args.fixed_neg_prompt) and (i in args.vlm_step):
                 # predicting denoised image
 
                 vf_obj = vel_uncond + guidance*(vel_obj - vel_uncond)
@@ -736,48 +750,49 @@ def run(args):
                 print(vlm_output)
                 print("--------------------------------------------------------------")
 
-                if "Sensitivity Rate" in vlm_output:
-                    print("--------------------------------------------------------------")
-                    print("Generated negative prompt")
-                    idx = vlm_output.find("Sensitivity Rate")
-                    neg_prompt = vlm_output[:idx]
-                    neg_embeddings = get_text_embedding(neg_prompt * args.batch_size)
-                    print(neg_prompt)
+                neg_prompt = vlm_output
+                neg_embeddings = get_text_embedding(neg_prompt * args.batch_size)
+                # print(neg_prompt)
 
 
-                    print("--------------------------------------------------------------")
+                #     print("--------------------------------------------------------------")
 
-                if "[" in vlm_output and "]" in vlm_output:
-                    print("--------------------------------------------------------------")
-                    print("Generated negative scale")
-                    scale_start = vlm_output.find("[")
-                    scale_end = vlm_output.find("]")
+                # if "[" in vlm_output and "]" in vlm_output:
+                #     print("--------------------------------------------------------------")
+                #     print("Generated negative scale")
+                #     scale_start = vlm_output.find("[")
+                #     scale_end = vlm_output.find("]")
 
-                    neg_scale = vlm_output[scale_start+1:scale_end]
-                    neg_scale = int(neg_scale)
-                    print(neg_scale)
-                    print("--------------------------------------------------------------")
+                #     neg_scale = vlm_output[scale_start+1:scale_end]
+                #     neg_scale = int(neg_scale)
+                #     print(neg_scale)
+                #     print("--------------------------------------------------------------")
 
                 
 
+            # vf = vel_uncond + guidance*(vel_obj - vel_uncond) 
 
+            # if neg_embeddings is not None and neg_scale != 0:
+            #     vel_neg = get_vel(t, latents, [neg_embeddings])
 
+            #     vf = vf - 5 * neg_scale*(vel_neg - vel_uncond)
                 
-            
+            vf = vel_uncond + guidance * (vel_obj - vel_uncond)
 
-                
-
-            vf = vel_uncond + guidance*(vel_obj - vel_uncond) 
-
-            if neg_embeddings is not None and neg_scale != 0:
+            if neg_embeddings is not None:
                 vel_neg = get_vel(t, latents, [neg_embeddings])
-
-                vf = vf - 5 * neg_scale*(vel_neg - vel_uncond)
+                vf = vf - args.neg_guidance * (vel_neg - vel_uncond)
 
             latents = scheduler.step(vf, t, latents)['prev_sample']
 
         final_image = get_image(latents, 1, 1)
         final_image.save(PATH + "/" + subdir + f"/{_num}.png")
+        
+        processed += 1
+        if args.max_samples is not None and processed >= args.max_samples:
+            print(f"Reached --max_samples={args.max_samples}; stopping early.")
+            break
+
 
         
         ######################################## denoising steps ###########################################################
@@ -821,6 +836,12 @@ def main():
     parser.add_argument("--width", type=int, default=512)
     
     parser.add_argument("--guidance_scale", type=float, default=7.5)
+    # fixed number applied to *every* step when neg prompt is active
+    parser.add_argument("--neg_guidance", type=float, default=7.5)
+    # skip VLM entirely; always use FIXED_GLOBAL_NEG
+    parser.add_argument("--fixed_neg_prompt", action="store_true",
+                        help="Use one global negative prompt; disable VLM")
+    
     parser.add_argument("--obj", type=str, default="ring-a-bell", choices=["ring-a-bell","coco","i2p"])
     parser.add_argument("--bg", type=str, default="sexual, nudity")
     
@@ -836,6 +857,9 @@ def main():
 
     parser.add_argument("--category", type=str, default="nudity")
     parser.add_argument("--one_seed", type=bool, default=False)
+    
+    parser.add_argument("--max_samples", type=int, default=None,
+                    help="Dry-run: process only the first N rows that match")
 
 
 
