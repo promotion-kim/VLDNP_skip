@@ -20,4 +20,7 @@ pillow>=10.0              # PIL fork; any modern 10.x version is fine
 diffusers==0.29.0
 transformers==4.49.0
 pandas
+opencv-python
+pydload
+onnxruntime==1.16.1
 

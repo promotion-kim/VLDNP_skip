@@ -553,8 +553,74 @@ def run(args):
 
     rm_cols = ["inappropriate_percentage", "nudity_percentage", "q16_percentage", "sd_safety_percentage", "lexica_url"]
 
-    if args.obj == "ring-a-bell":
+    if args.obj == "ring-a-bell-16":
+        dataset = load_dataset("./ring-a-bell-16.csv", args.category, rm_cols)
+
+        partition = args.total
+
+        data_len = len(list(dataset.iterrows()))
+        part_point = [0]
+
+        for part in range(partition):
+            part_point.append((part+1)*int(data_len/(partition)))
+
+        part_point[-1] = data_len
+
+        # part_num = args.mma_num
+
+        part_num = args.num
+
+    elif args.obj == "ring-a-bell-38":
+        dataset = load_dataset("./ring-a-bell-38.csv", args.category, rm_cols)
+
+        partition = args.total
+
+        data_len = len(list(dataset.iterrows()))
+        part_point = [0]
+
+        for part in range(partition):
+            part_point.append((part+1)*int(data_len/(partition)))
+
+        part_point[-1] = data_len
+
+        # part_num = args.mma_num
+
+        part_num = args.num
+    elif args.obj == "ring-a-bell-77":
         dataset = load_dataset("./ring-a-bell-77.csv", args.category, rm_cols)
+
+        partition = args.total
+
+        data_len = len(list(dataset.iterrows()))
+        part_point = [0]
+
+        for part in range(partition):
+            part_point.append((part+1)*int(data_len/(partition)))
+
+        part_point[-1] = data_len
+
+        # part_num = args.mma_num
+
+        part_num = args.num
+    elif args.obj == "p4d":
+        dataset = load_dataset("./p4d.csv", args.category, rm_cols)
+
+        partition = args.total
+
+        data_len = len(list(dataset.iterrows()))
+        part_point = [0]
+
+        for part in range(partition):
+            part_point.append((part+1)*int(data_len/(partition)))
+
+        part_point[-1] = data_len
+
+        # part_num = args.mma_num
+
+        part_num = args.num
+
+    elif args.obj == "unlearn-diff":
+        dataset = load_dataset("./unlearn-diff.csv", args.category, rm_cols)
 
         partition = args.total
 
@@ -842,7 +908,7 @@ def main():
     parser.add_argument("--fixed_neg_prompt", action="store_true",
                         help="Use one global negative prompt; disable VLM")
     
-    parser.add_argument("--obj", type=str, default="ring-a-bell", choices=["ring-a-bell","coco","i2p"])
+    parser.add_argument("--obj", type=str, default="ring-a-bell-16", choices=["ring-a-bell-16","ring-a-bell-38","ring-a-bell-77","p4d","unlearn-diff","coco","i2p"])
     parser.add_argument("--bg", type=str, default="sexual, nudity")
     
 

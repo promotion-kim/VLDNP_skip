@@ -15,6 +15,7 @@ __pycache__/
 dist/
 build/
 results/
+classifier/
 
 # virtual-envs
 .env
