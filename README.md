@@ -107,6 +107,7 @@ Senstivity Rate is for Negative Guidance Scale.
 
 ## 5 Evaluation with Nudenet Classifier (from SAFREE)
 You can download Classifier model at [Nudenet Classifier](https://drive.google.com/drive/folders/1kKXNk8iHXdzxi2J-RM7OWuFKSrNFNynW?usp=drive_link)
+
 Download and place at 'classifier/'
 
 Evaluation can be done by
