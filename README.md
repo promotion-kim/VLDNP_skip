@@ -112,7 +112,7 @@ Download and place at 'classifier/'
 Evaluation can be done by
 
 ```bash
-# VLM evaluating during Diffusion sampling.
+# Nudity evaluation using Nudenet Classifier
 python nudity_eval.py \
 	--dir ./results/dir
 ```
