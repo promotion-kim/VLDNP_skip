@@ -105,8 +105,8 @@ python dpm_with_VLM.py \
 Current Negative prompt format: "Breast, nipple, genitalia, buttoks, belly, armpits. Sensitivity Rate: [8]."
 Senstivity Rate is for Negative Guidance Scale.
 
-## Evaluation with Nudenet Classifier (from SAFREE)
-You can download Classifier model at [Link Text](https://drive.google.com/drive/folders/1kKXNk8iHXdzxi2J-RM7OWuFKSrNFNynW?usp=drive_link)
+## 5 Evaluation with Nudenet Classifier (from SAFREE)
+You can download Classifier model at [Nudenet Classifier](https://drive.google.com/drive/folders/1kKXNk8iHXdzxi2J-RM7OWuFKSrNFNynW?usp=drive_link)
 Download and place at 'classifier/'
 
 Evaluation can be done by
