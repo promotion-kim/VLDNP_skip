@@ -44,9 +44,6 @@ FIXED_GLOBAL_NEG = (
     "Carnal Desires, Sexual Gratification"
 )
 
-FIXED_BODY_PART_LIST = ["female genitalia", "buttocks", "female breast", "male breast", "anus", "feet", "belly", "armpits", "male genitalia"]
-FIXED_BODY_PART_LIST += ["Female genitalia", "Buttocks", "Female breast", "Male breast", "Anus", "Feet", "Belly", "Armpits", "Male genitalia"]
-
 
 # load diffusion model
 
@@ -118,28 +115,28 @@ try:
         {
             "image": Image.open(DEMO_DIR / "bluebird.png"),
             "neg": (
-                "I cannot spot any human body parts in this image."
+                "There is no sensitive body part."
             ),
             "score": 0
         },
         {
             "image": Image.open(DEMO_DIR / "female_adversarial.png"),
             "neg": (
-                "female breast, butoocks, belly, feet."
+                "breast, nipple, genitalia, buttoks, belly, armpits."
             ),
             "score": 5
         },
         {
             "image": Image.open(DEMO_DIR / "male_adversarial.png"),
             "neg": (
-                "male breast, bellly, armpits, male genitalia, feet."
+                "breast, nipple, pennis, anus, buttoks, belly, armpits."
             ),
             "score": 10
         },
         {
             "image": Image.open(DEMO_DIR / "blur.png"),
             "neg": (
-                "I cannot spot any human body parts in this image."
+                "The image is heavily blurred."
             ),
             "score": 0
         },
@@ -321,7 +318,7 @@ def build_messages_nudity(demos, image, pos_prompt, H=448, W=448):
                     pic(d["image"]),
                     {
                         "type": "text",
-                        "text": 'Which of the following bare human body parts can you spot in the image? "female genitalia, buttocks, female breast, male breast, anus, feet, belly, armpits, male genitalia”',
+                        "text": 'Suggest a sensitive body part that need to be covered.',
                     },
                 ],
             },
@@ -339,7 +336,7 @@ def build_messages_nudity(demos, image, pos_prompt, H=448, W=448):
                 pic(image),
                 {
                     "type": "text",
-                    "text": 'Which of the following bare human body parts can you spot in the image? "female genitalia, buttocks, female breast, male breast, anus, feet, belly, armpits, male genitalia”',
+                    "text": 'Suggest a sensitive body part that need to be covered.',
                 },
             ],
         }
@@ -525,7 +522,7 @@ def run(args):
 
     subdir = prompt_for_save
 
-    subdir += f"_dpm_vlm_sampling"
+    subdir += f"_dpm_neg_prompt_sampling"
 
 
     PATH = args.path
@@ -679,28 +676,6 @@ def run(args):
         raise
 
 
-    device = torch.device(args.device if torch.cuda.is_available() else "cpu")
-    model_id = "Qwen/Qwen2.5-VL-7B-Instruct"
-    
-    print(f"Loading model {model_id} on {device}...")
-    processor = AutoProcessor.from_pretrained(model_id, trust_remote_code=True)
-
-
-    model = Qwen2_5_VLForConditionalGeneration.from_pretrained(
-        model_id,
-        device_map="auto" if device.type == "cuda" else None,
-        torch_dtype=torch.float16 if device.type == "cuda" else torch.float32,
-        trust_remote_code=True,
-        cache_dir="/ext_hdd/yschoi2/qwen"
-    ).eval()
-
-
-
-    demos_to_use = [] if args.no_demos else DEMO_TRIPLES
-    if demos_to_use:
-        print(f"Using {len(demos_to_use)} demo examples for few-shot learning")
-    else:
-        print("Running without demo examples (simpler mode)")
 
 
 
@@ -801,77 +776,18 @@ def run(args):
                 vf_obj = vel_uncond + guidance*(vel_obj - vel_uncond)
                 predicted_latent = ((latents - torch.sqrt(1-a_bar_t)*vf_obj)/torch.sqrt(a_bar_t))
 
-                vlm_img_input = get_image(predicted_latent, 1, 1)
-                
-                # give current prediction to VLM
-                vlm_output = generate_neg(model, processor, demos_to_use, vlm_img_input, obj_prompt, device)
-                
-
-                # Need to handle Generated Negative prompt and feed back to diffusion models.
-                # Currently we need negative prompt + guidance scale.
-                # Now trying to find negative guidance scale from image sensitivity obtained from VLM.
-                # For this we need appropriate VLM instruction.
-                # This is just example.
+            
 
 
-                print("--------------------------------------------------------------")
-                print("Generated following vlm output")
-                print(vlm_output)
-                print("--------------------------------------------------------------")
 
-                neg_prompt = None
-                body_part_found = False
-
-                for body_part in FIXED_BODY_PART_LIST:
-                    if body_part in vlm_output:
-                        print("found body part")
-                        body_part_found = True
-
-                        if neg_prompt is None:
-                            neg_prompt = "Nudity, sexual, " + body_part
-                        else:
-                            neg_prompt += ", " + body_part
-                
-                if body_part_found:
-                    neg_prompt += "."
-                    # neg_prompt = "Nudity, sexual"
-                    print("--------------------------------------------------------------")
-                    print("Generated following negative prompt")
-                    print(neg_prompt)
-                    print("--------------------------------------------------------------")
-                    neg_embeddings = get_text_embedding(neg_prompt * args.batch_size)
-                else:
-                    neg_embeddings = None
-                # print(neg_prompt)
-
-
-                #     print("--------------------------------------------------------------")
-
-                # if "[" in vlm_output and "]" in vlm_output:
-                #     print("--------------------------------------------------------------")
-                #     print("Generated negative scale")
-                #     scale_start = vlm_output.find("[")
-                #     scale_end = vlm_output.find("]")
-
-                #     neg_scale = vlm_output[scale_start+1:scale_end]
-                #     neg_scale = int(neg_scale)
-                #     print(neg_scale)
-                #     print("--------------------------------------------------------------")
 
                 
+            # vf = vel_uncond + guidance * (vel_obj - vel_uncond)
 
-            # vf = vel_uncond + guidance*(vel_obj - vel_uncond) 
+            vel_neg = get_vel(t, latents, [neg_embeddings])
+            # vf = vf - args.neg_guidance * (vel_neg - vel_uncond)
 
-            # if neg_embeddings is not None and neg_scale != 0:
-            #     vel_neg = get_vel(t, latents, [neg_embeddings])
-
-            #     vf = vf - 5 * neg_scale*(vel_neg - vel_uncond)
-                
-            vf = vel_uncond + guidance * (vel_obj - vel_uncond)
-
-            if neg_embeddings is not None:
-                vel_neg = get_vel(t, latents, [neg_embeddings])
-                vf = vf - args.neg_guidance * (vel_neg - vel_uncond)
+            vf = vel_uncond + guidance*(vel_obj - vel_uncond) - args.neg_guidance*(vel_neg-vel_uncond)
 
             latents = scheduler.step(vf, t, latents)['prev_sample']
 
@@ -940,7 +856,7 @@ def main():
     parser.add_argument('--vlm_step', type=int, nargs='+', help='List of vlm eval steps')
    
     
-    parser.add_argument("--path", type=str, default="./results")
+    parser.add_argument("--path", type=str, default="./results_neg_prompt")
     parser.add_argument("--device", default="cuda", help="cuda / cpu")
 
     
