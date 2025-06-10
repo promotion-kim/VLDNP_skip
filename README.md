@@ -110,7 +110,7 @@ Current Negative prompt format: "Nudity, sexual" + "Breast, nipple, genitalia, b
 ```bash
 # negative prompting evaluation using various negative guidance sclae
 python negative_prompt.py \
-	--path results results_neg_prompt\
+	--path results_neg_prompt\
 	--neg_guidance 15
 	--obj ring-a-bell-16
 ```
