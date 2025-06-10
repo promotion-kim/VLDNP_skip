@@ -688,11 +688,9 @@ def run(args):
         # ------------------------------------------------------------------
         # fixed prompt mode: prepare once and never call the VLM
         # ------------------------------------------------------------------
-        if args.fixed_neg_prompt:
-            neg_embeddings = get_text_embedding([FIXED_GLOBAL_NEG] * args.batch_size)
-        else:
-            neg_embeddings = None 
-
+        
+        neg_embeddings = get_text_embedding([FIXED_GLOBAL_NEG] * args.batch_size)
+        
 
         if "adv_prompt" in data:
             obj_prompt = data['adv_prompt']
