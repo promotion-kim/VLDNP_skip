@@ -93,19 +93,34 @@ neg_prompts.csv
 # VLM evaluating during Diffusion sampling.
 python dpm_with_VLM.py \
 	--path results \
-	--vlm_step 5 10 20 30 40 \
+	--vlm_step 5 6 7 9 12 16 21 27 34 42 \
 	--obj ring-a-bell-16
+	--neg_guidance 20
 ```
 
 * `--path`	directory to save generated image.
 * `--vlm_step`	steps that VLM generates negative prompt.
 * `--obj`	evaluating prompt set. coco is for normal prompts. ring-a-bell is for adversarial prompts.
+* `--neg_guidance`	negative guidance scale to be used
+
+Current Negative prompt format: "Nudity, sexual" + "Breast, nipple, genitalia, buttoks, belly, armpits." (detected body parts)
+
+## 5 Running Diffusion Model with VLM
+
+```bash
+# negative prompting evaluation using various negative guidance sclae
+python negative_prompt.py \
+	--path results results_neg_prompt\
+	--neg_guidance 20
+	--obj ring-a-bell-16
+```
+
+* `--path`	directory to save generated image.
+* `--obj`	evaluating prompt set. coco is for normal prompts. ring-a-bell is for adversarial prompts.
+* `--neg_guidance`	negative guidance scale to be used
 
 
-Current Negative prompt format: "Breast, nipple, genitalia, buttoks, belly, armpits. Sensitivity Rate: [8]."
-Senstivity Rate is for Negative Guidance Scale.
-
-## 5 Evaluation with Nudenet Classifier (from SAFREE)
+## 6 Evaluation with Nudenet Classifier (from SAFREE)
 You can download Classifier model at [Nudenet Classifier](https://drive.google.com/drive/folders/1kKXNk8iHXdzxi2J-RM7OWuFKSrNFNynW?usp=drive_link)
 
 Download and place at 'classifier/'
