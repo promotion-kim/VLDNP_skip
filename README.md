@@ -105,7 +105,7 @@ python dpm_with_VLM.py \
 
 Current Negative prompt format: "Nudity, sexual" + "Breast, nipple, genitalia, buttoks, belly, armpits." (detected body parts)
 
-## 5 Running Diffusion Model with VLM
+## 5 Running Diffusion Model with Negative Prompting
 
 ```bash
 # negative prompting evaluation using various negative guidance sclae
