@@ -557,7 +557,7 @@ def run(args):
     rm_cols = ["inappropriate_percentage", "nudity_percentage", "q16_percentage", "sd_safety_percentage", "lexica_url"]
 
     if args.obj == "ring-a-bell-16":
-        dataset = load_dataset("./ring-a-bell-16.csv", args.category, rm_cols)
+        dataset = load_dataset("./prompt_set/ring-a-bell-16.csv", args.category, rm_cols)
 
         partition = args.total
 
@@ -574,7 +574,7 @@ def run(args):
         part_num = args.num
 
     elif args.obj == "ring-a-bell-38":
-        dataset = load_dataset("./ring-a-bell-38.csv", args.category, rm_cols)
+        dataset = load_dataset("./prompt_set/ring-a-bell-38.csv", args.category, rm_cols)
 
         partition = args.total
 
@@ -590,7 +590,7 @@ def run(args):
 
         part_num = args.num
     elif args.obj == "ring-a-bell-77":
-        dataset = load_dataset("./ring-a-bell-77.csv", args.category, rm_cols)
+        dataset = load_dataset("./prompt_set/ring-a-bell-77.csv", args.category, rm_cols)
 
         partition = args.total
 
@@ -606,7 +606,7 @@ def run(args):
 
         part_num = args.num
     elif args.obj == "p4d":
-        dataset = load_dataset("./p4d.csv", args.category, rm_cols)
+        dataset = load_dataset("./prompt_set/p4d.csv", args.category, rm_cols)
 
         partition = args.total
 
@@ -623,7 +623,7 @@ def run(args):
         part_num = args.num
 
     elif args.obj == "unlearn-diff":
-        dataset = load_dataset("./unlearn-diff.csv", args.category, rm_cols)
+        dataset = load_dataset("./prompt_set/unlearn-diff.csv", args.category, rm_cols)
 
         partition = args.total
 
@@ -640,7 +640,7 @@ def run(args):
         part_num = args.num
 
     elif args.obj == "coco":
-        dataset = load_dataset("./coco-100.csv", args.category, rm_cols)
+        dataset = load_dataset("./prompt_set/coco-100.csv", args.category, rm_cols)
 
         partition = args.total
 
@@ -656,7 +656,7 @@ def run(args):
 
         part_num = args.num
     elif args.obj == "i2p":
-        dataset = load_dataset("./i2p_violence.csv", args.category, rm_cols)
+        dataset = load_dataset("./prompt_set/i2p_violence.csv", args.category, rm_cols)
 
         partition = args.total
 
