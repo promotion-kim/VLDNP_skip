@@ -53,6 +53,7 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser(description="Your script description here")
     parser.add_argument("--dir", type=str, default="./results/ring-a-bell-16_and_sexualnuditydpm_vlm_sampling")
+    args = parser.parse_args()
 
     image_directory = args.dir
 
