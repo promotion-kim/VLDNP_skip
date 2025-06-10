@@ -691,7 +691,7 @@ def run(args):
         device_map="auto" if device.type == "cuda" else None,
         torch_dtype=torch.float16 if device.type == "cuda" else torch.float32,
         trust_remote_code=True,
-        cache_dir="/ext_hdd/yschoi2/qwen"
+        # cache_dir="/ext_hdd/yschoi2/qwen"
     ).eval()
 
 
