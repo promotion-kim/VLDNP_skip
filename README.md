@@ -95,7 +95,7 @@ python dpm_with_VLM.py \
 	--path results \
 	--vlm_step 5 6 7 9 12 16 21 27 34 42 \
 	--obj ring-a-bell-16
-	--neg_guidance 20
+	--neg_guidance 15
 ```
 
 * `--path`	directory to save generated image.
@@ -111,7 +111,7 @@ Current Negative prompt format: "Nudity, sexual" + "Breast, nipple, genitalia, b
 # negative prompting evaluation using various negative guidance sclae
 python negative_prompt.py \
 	--path results results_neg_prompt\
-	--neg_guidance 20
+	--neg_guidance 15
 	--obj ring-a-bell-16
 ```
 
