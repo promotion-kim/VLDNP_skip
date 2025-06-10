@@ -15,7 +15,7 @@ __pycache__/
 dist/
 build/
 results/
-results
+results_neg_prompt/
 classifier/
 
 # virtual-envs
