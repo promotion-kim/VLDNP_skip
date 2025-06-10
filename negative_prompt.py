@@ -554,7 +554,7 @@ def run(args):
     rm_cols = ["inappropriate_percentage", "nudity_percentage", "q16_percentage", "sd_safety_percentage", "lexica_url"]
 
     if args.obj == "ring-a-bell-16":
-        dataset = load_dataset("./ring-a-bell-16.csv", args.category, rm_cols)
+        dataset = load_dataset("./prompt_set/ring-a-bell-16.csv", args.category, rm_cols)
 
         partition = args.total
 
@@ -571,7 +571,7 @@ def run(args):
         part_num = args.num
 
     elif args.obj == "ring-a-bell-38":
-        dataset = load_dataset("./ring-a-bell-38.csv", args.category, rm_cols)
+        dataset = load_dataset("./prompt_set/ring-a-bell-38.csv", args.category, rm_cols)
 
         partition = args.total
 
@@ -587,7 +587,7 @@ def run(args):
 
         part_num = args.num
     elif args.obj == "ring-a-bell-77":
-        dataset = load_dataset("./ring-a-bell-77.csv", args.category, rm_cols)
+        dataset = load_dataset("./prompt_set/ring-a-bell-77.csv", args.category, rm_cols)
 
         partition = args.total
 
@@ -766,16 +766,6 @@ def run(args):
             # diffusion output for denoising
             vel_obj = get_vel(t, latents, [obj_embeddings])
             vel_uncond = get_vel(t, latents, [uncond_embeddings])
-
-
-
-            # if i in args.vlm_step:
-            if (not args.fixed_neg_prompt) and (i in args.vlm_step):
-                # predicting denoised image
-
-                vf_obj = vel_uncond + guidance*(vel_obj - vel_uncond)
-                predicted_latent = ((latents - torch.sqrt(1-a_bar_t)*vf_obj)/torch.sqrt(a_bar_t))
-
             
 
 
