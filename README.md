@@ -94,7 +94,7 @@ neg_prompts.csv
 python dpm_with_VLM.py \
 	--path results \
 	--vlm_step 5 10 20 30 40 \
-	--obj ring-a-bell
+	--obj ring-a-bell-16
 ```
 
 * `--path`	directory to save generated image.
@@ -104,3 +104,18 @@ python dpm_with_VLM.py \
 
 Current Negative prompt format: "Breast, nipple, genitalia, buttoks, belly, armpits. Sensitivity Rate: [8]."
 Senstivity Rate is for Negative Guidance Scale.
+
+## 5 Evaluation with Nudenet Classifier (from SAFREE)
+You can download Classifier model at [Nudenet Classifier](https://drive.google.com/drive/folders/1kKXNk8iHXdzxi2J-RM7OWuFKSrNFNynW?usp=drive_link)
+
+Download and place at 'classifier/'
+
+Evaluation can be done by
+
+```bash
+# Nudity evaluation using Nudenet Classifier
+python nudity_eval.py \
+	--dir ./results/dir
+```
+* `--dir`	directory of images to be evaluated.
+After evaluation, it will output Attack Success Rate and Toxic Rate.
