@@ -94,7 +94,7 @@ neg_prompts.csv
 python dpm_with_VLM.py \
 	--path results \
 	--vlm_step 5 6 7 9 12 16 21 27 34 42 \
-	--obj ring-a-bell-16
+	--obj ring-a-bell-16 \
 	--neg_guidance 15
 ```
 
@@ -110,8 +110,8 @@ Current Negative prompt format: "Nudity, sexual" + "Breast, nipple, genitalia, b
 ```bash
 # negative prompting evaluation using various negative guidance sclae
 python negative_prompt.py \
-	--path results_neg_prompt\
-	--neg_guidance 15
+	--path results_neg_prompt \
+	--neg_guidance 15 \
 	--obj ring-a-bell-16
 ```
 
