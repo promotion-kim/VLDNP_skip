@@ -1,4 +1,4 @@
-# Adaptive Negative-Prompt Bench (Qwen 2.5-VL)
+# Adaptive Negative-Prompt Bench (Qwen 3-VL)
 
 This repo contains a **quick-benchmark script** that auto-generates concise
 *negative prompts* for diffusion images using
@@ -29,9 +29,6 @@ prompt to CSV.
 ```bash
 # create / activate your venv or conda env first
 pip install -r requirements.txt
-
-#  (Optional) install a GPU wheel if you have CUDA 12.1
-pip install --upgrade torch --index-url https://download.pytorch.org/whl/cu121
 ````
 
 The pinned versions avoid the `numpy 2.0` / `transformers` padding bug that
@@ -91,17 +88,9 @@ neg_prompts.csv
 
 ```bash
 # VLM evaluating during Diffusion sampling.
-python dpm_with_VLM.py \
-	--path results \
-	--vlm_step 5 6 7 9 12 16 21 27 34 42 \
-	--obj ring-a-bell-16 \
-	--neg_guidance 15
+bash vldnp.sh
+bash vldnp_skip.sh
 ```
-
-* `--path`	directory to save generated image.
-* `--vlm_step`	steps that VLM generates negative prompt.
-* `--obj`	evaluating prompt set. coco is for normal prompts. ring-a-bell is for adversarial prompts.
-* `--neg_guidance`	negative guidance scale to be used
 
 Current Negative prompt format: "Nudity, sexual" + "Breast, nipple, genitalia, buttoks, belly, armpits." (detected body parts)
 
@@ -109,16 +98,8 @@ Current Negative prompt format: "Nudity, sexual" + "Breast, nipple, genitalia, b
 
 ```bash
 # negative prompting evaluation using various negative guidance sclae
-python negative_prompt.py \
-	--path results_neg_prompt \
-	--neg_guidance 15 \
-	--obj ring-a-bell-16
+bash negative_prompt.bash
 ```
-
-* `--path`	directory to save generated image.
-* `--obj`	evaluating prompt set. coco is for normal prompts. ring-a-bell is for adversarial prompts.
-* `--neg_guidance`	negative guidance scale to be used
-
 
 ## 6 Evaluation with Nudenet Classifier (from SAFREE)
 You can download Classifier model as follows:
