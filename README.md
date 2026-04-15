@@ -98,7 +98,7 @@ Current Negative prompt format: "Nudity, sexual" + "Breast, nipple, genitalia, b
 
 ```bash
 # negative prompting evaluation using various negative guidance sclae
-bash negative_prompt.bash
+bash negative_prompt.sh
 ```
 
 ## 6 Evaluation with Nudenet Classifier (from SAFREE)
