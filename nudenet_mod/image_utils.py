@@ -1,9 +1,11 @@
 import os
 import io
-import cv2
-import pydload
 import logging
 import numpy as np
+try:
+    import cv2
+except ModuleNotFoundError:
+    cv2 = None
 
 from PIL import Image as pil_image
 
@@ -54,6 +56,10 @@ def load_img(
     if isinstance(path, (str, io.IOBase)):
         img = pil_image.open(path)
     else:
+        if cv2 is None:
+            raise ModuleNotFoundError(
+                "opencv-python is required when loading images from numpy arrays."
+            )
         path = cv2.cvtColor(path, cv2.COLOR_BGR2RGB)
         img = pil_image.fromarray(path)
 

@@ -35,6 +35,7 @@ from PIL import Image, ImageOps
 from transformers import AutoProcessor, Qwen2_5_VLForConditionalGeneration
 # NEW import
 from qwen_vl_utils import process_vision_info
+import json
 
 
 FIXED_GLOBAL_NEG = (
@@ -540,6 +541,11 @@ def run(args):
     # run inference
     print("Running inference...")
     start_time = time.time()  # Record the start time
+
+    #!
+    image_times = []
+    per_image_stats = []
+    total_vlm_calls = 0  # static negative prompting: always zero
     
 
 
@@ -726,7 +732,10 @@ def run(args):
 
         print(f"number: {_num}, prompt: {obj_prompt}, seed: {seed}")
 
-
+        #!
+        if torch.cuda.is_available():
+            torch.cuda.synchronize()
+        image_start = time.time()
 
         obj_embeddings = get_text_embedding(obj_prompt * args.batch_size)
 
@@ -779,14 +788,38 @@ def run(args):
 
             latents = scheduler.step(vf, t, latents)['prev_sample']
 
-        final_image = get_image(latents, 1, 1)
+        #!
+        '''final_image = get_image(latents, 1, 1)
         final_image.save(PATH + "/" + subdir + f"/{_num}.png")
-        
         processed += 1
         if args.max_samples is not None and processed >= args.max_samples:
             print(f"Reached --max_samples={args.max_samples}; stopping early.")
-            break
+            break'''
+        final_image = get_image(latents, 1, 1)
+        final_image.save(PATH + "/" + subdir + f"/{_num}.png")
+        processed += 1
+        if torch.cuda.is_available():
+            torch.cuda.synchronize()
+        image_time = time.time() - image_start
+        image_times.append(image_time)
+        print(
+            f"[IMAGE {_num}] time={image_time:.3f}s, "
+            f"vlm_calls=0"
+        )
+        per_image_stats.append(
+            {
+                "image_index": int(_num),
+                "image_path": str(Path(PATH) / subdir / f"{_num}.png"),
+                "inference_time_sec": float(image_time),
+                "vlm_calls": 0,
+                "prompt": str(obj_prompt),
+                "seed": int(seed),
+            }
+        )
 
+        if args.max_samples is not None and processed >= args.max_samples:
+            print(f"Reached --max_samples={args.max_samples}; stopping early.")
+            break
 
         
         ######################################## denoising steps ###########################################################
@@ -799,12 +832,33 @@ def run(args):
     
     end_time = time.time()  # Record the end time
     execution_time = end_time - start_time  # Calculate the time taken
+
+    #!
+    '''print(f"The function took {execution_time:.4f} seconds to run.")
+    print("Inference done.")'''
+    avg_inference_time = execution_time / processed if processed > 0 else 0.0
+    avg_image_time = sum(image_times) / len(image_times) if len(image_times) > 0 else 0.0
+    stats = {
+        "method": "static_negative_prompting",
+        "output_dir": str(Path(PATH) / subdir),
+        "num_processed_images": int(processed),
+        "total_inference_time_sec": float(execution_time),
+        "average_inference_time_sec": float(avg_inference_time),
+        "average_image_time_sec": float(avg_image_time),
+        "total_vlm_calls": 0,
+        "average_vlm_calls_per_image": 0.0,
+        "num_inference_steps": int(args.num_inference_steps),
+        "neg_guidance": float(args.neg_guidance),
+        "fixed_negative_prompt": FIXED_GLOBAL_NEG,
+        "vlm_model_id": None,
+        "sim_model_id": None,
+        "per_image_stats": per_image_stats,
+    }
+    stats_path = Path(PATH) / subdir / "inference_stats.json"
+    with open(stats_path, "w", encoding="utf-8") as f:
+        json.dump(stats, f, indent=2, ensure_ascii=False)
     print(f"The function took {execution_time:.4f} seconds to run.")
-    
-    # mixed_samples = get_batch(latents, 1, args.batch_size)
-    # image_list = get_batch_list(latent_list)
-
-
+    print(f"Saved inference stats to: {stats_path}")
     print("Inference done.")
 
 

@@ -1,6 +1,5 @@
 import os
 import cv2
-import pydload
 import logging
 import numpy as np
 import onnxruntime
@@ -8,6 +7,10 @@ from progressbar import progressbar
 
 from .detector_utils import preprocess_image
 from .video_utils import get_interest_frames_from_video
+try:
+    import pydload
+except ModuleNotFoundError:
+    pydload = None
 
 
 def dummy(x):
@@ -47,10 +50,22 @@ class Detector:
         classes_path = os.path.join(model_folder, "classes")
 
         if not os.path.exists(checkpoint_path):
+            if pydload is None:
+                raise ModuleNotFoundError(
+                    "pydload is required to download NudeNet detector checkpoints. "
+                    "Install it with `pip install pydload` or place the checkpoint at "
+                    f"{checkpoint_path}."
+                )
             print("Downloading the checkpoint to", checkpoint_path)
             pydload.dload(checkpoint_url, save_to_path=checkpoint_path, max_time=None)
 
         if not os.path.exists(classes_path):
+            if pydload is None:
+                raise ModuleNotFoundError(
+                    "pydload is required to download NudeNet detector class metadata. "
+                    "Install it with `pip install pydload` or place the classes file at "
+                    f"{classes_path}."
+                )
             print("Downloading the classes list to", classes_path)
             pydload.dload(classes_url, save_to_path=classes_path, max_time=None)
 

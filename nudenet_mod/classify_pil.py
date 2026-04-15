@@ -1,7 +1,4 @@
 import os
-import cv2
-import tarfile
-import pydload
 import logging
 import numpy as np
 import onnxruntime

@@ -28,3 +28,6 @@ classifier/
 .DS_Store
 *.log
 
+*.codex
+
+

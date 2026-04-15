@@ -299,6 +299,10 @@ def main():
     ap.add_argument("--no-demos", action="store_true", help="Skip demo examples (simpler processing)")
     ap.add_argument("--limit", type=int, default=5,
                     help="Stop after N distinct images (per source filter)")
+    
+    #!
+    ap.add_argument("--vlm_model_id", required=True, type=str)
+
     args = ap.parse_args()
 
     include_sources: List[str] = []
@@ -332,7 +336,10 @@ def main():
 
     # Model ---------------------------------------------------------------
     device = torch.device(args.device if torch.cuda.is_available() else "cpu")
-    model_id = "Qwen/Qwen2.5-VL-7B-Instruct"
+
+    #!
+    #model_id = "Qwen/Qwen2.5-VL-7B-Instruct"
+    model_id = args.vlm_model_id
     
     print(f"Loading model {model_id} on {device}...")
     processor = AutoProcessor.from_pretrained(model_id, trust_remote_code=True)

@@ -1,9 +1,12 @@
 import os
 import cv2
-import pydload
 import numpy as np
 
 from .image_utils import load_images
+try:
+    import pydload
+except ModuleNotFoundError:
+    pydload = None
 
 
 class LiteClassifier:
@@ -17,6 +20,12 @@ class LiteClassifier:
         model_path = os.path.join(model_folder, os.path.basename(url))
 
         if not os.path.exists(model_path):
+            if pydload is None:
+                raise ModuleNotFoundError(
+                    "pydload is required to download NudeNet lite checkpoints. "
+                    "Install it with `pip install pydload` or place the model at "
+                    f"{model_path}."
+                )
             print("Downloading the checkpoint to", model_path)
             pydload.dload(url, save_to_path=model_path, max_time=None)
 

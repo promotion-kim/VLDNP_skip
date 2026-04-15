@@ -2,7 +2,7 @@
 
 This repo contains a **quick-benchmark script** that auto-generates concise
 *negative prompts* for diffusion images using
-[Qwen-2.5-VL-Instruct](https://huggingface.co/Qwen).  
+[Qwen-3-VL-Instruct](https://huggingface.co/Qwen).  
 It walks a directory of *timestep* sub-folders, feeds each image (optionally
 with a few-shot context) to the model, and writes the suggested negative
 prompt to CSV.
@@ -121,8 +121,12 @@ python negative_prompt.py \
 
 
 ## 6 Evaluation with Nudenet Classifier (from SAFREE)
-You can download Classifier model at [Nudenet Classifier](https://drive.google.com/drive/folders/1kKXNk8iHXdzxi2J-RM7OWuFKSrNFNynW?usp=drive_link)
-
+You can download Classifier model as follows:
+```bash
+curl -L \
+  -o classifier/nudenet_classifier_model.onnx \
+  https://huggingface.co/gqfwqgw/NudeNet_classifier_model/resolve/main/classifier_model.onnx
+```
 Download and place at 'classifier/'
 
 Evaluation can be done by

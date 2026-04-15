@@ -32,9 +32,12 @@ from typing import Dict, List, Tuple
 
 
 from PIL import Image, ImageOps
-from transformers import AutoProcessor, Qwen2_5_VLForConditionalGeneration
+#from transformers import AutoProcessor, Qwen2_5_VLForConditionalGeneration
 # NEW import
+from transformers import AutoProcessor, Qwen3VLForConditionalGeneration
+import torch.nn.functional as F
 from qwen_vl_utils import process_vision_info
+import json
 
 
 FIXED_GLOBAL_NEG = (
@@ -492,17 +495,36 @@ def get_vel(t, latents, embeddings, eps=None):
     
     return vel
 
+@torch.no_grad()
+def get_clip_image_feature(image: Image.Image, clip_model, clip_processor, device):
+    inputs = clip_processor(images=image.convert("RGB"), return_tensors="pt").to(device)
+    feats = clip_model.get_image_features(**inputs)
+    feats = F.normalize(feats, dim=-1)
+    return feats
 
+#!
+@torch.no_grad()
+def compute_image_similarity(prev_img: Image.Image, cur_img: Image.Image, clip_model, clip_processor, device):
+    z1 = get_clip_image_feature(prev_img, clip_model, clip_processor, device)
+    z2 = get_clip_image_feature(cur_img, clip_model, clip_processor, device)
+    sim = (z1 * z2).sum(dim=-1)
+    return sim.item()
 
+def vlm_output_to_neg_prompt(vlm_output: str):
+    neg_prompt = None
+    body_part_found = False
 
+    for body_part in FIXED_BODY_PART_LIST:
+        if body_part in vlm_output:
+            body_part_found = True
+            if neg_prompt is None:
+                neg_prompt = "Nudity, sexual, " + body_part
+            else:
+                neg_prompt += ", " + body_part
 
-
-
-
-    
-
-    
-    
+    if body_part_found:
+        return neg_prompt + "."
+    return None
 
 
 def run(args):
@@ -680,7 +702,9 @@ def run(args):
 
 
     device = torch.device(args.device if torch.cuda.is_available() else "cpu")
-    model_id = "Qwen/Qwen2.5-VL-7B-Instruct"
+    
+    #!
+    '''model_id = "Qwen/Qwen2.5-VL-7B-Instruct"
     
     print(f"Loading model {model_id} on {device}...")
     processor = AutoProcessor.from_pretrained(model_id, trust_remote_code=True)
@@ -692,8 +716,34 @@ def run(args):
         torch_dtype=torch.float16 if device.type == "cuda" else torch.float32,
         trust_remote_code=True,
         cache_dir="/ext_hdd/yschoi2/qwen"
+    ).eval()'''
+    model_id = args.vlm_model_id
+    print(f"Loading model {model_id} on {device}...")
+    processor = AutoProcessor.from_pretrained(model_id, trust_remote_code=True)
+
+    model = Qwen3VLForConditionalGeneration.from_pretrained(
+        model_id,
+        device_map="auto" if device.type == "cuda" else None,
+        dtype=torch.float16 if device.type == "cuda" else torch.float32,
+        attn_implementation="sdpa" if device.type == "cuda" else None,
+        trust_remote_code=True,
+        cache_dir="/ext_hdd/sjkim/qwen"
     ).eval()
 
+    #!
+    '''sim_processor = CLIPProcessor.from_pretrained(args.sim_model_id)
+    sim_model = CLIPModel.from_pretrained(args.sim_model_id).to(device).eval()'''
+    use_similarity_skip = getattr(args, "sim_threshold", None) is not None
+
+    sim_processor = None
+    sim_model = None
+
+    if use_similarity_skip:
+        sim_processor = CLIPProcessor.from_pretrained(args.sim_model_id)
+        sim_model = CLIPModel.from_pretrained(
+            args.sim_model_id,
+            use_safetensors=True,
+        ).to(device).eval()
 
 
     demos_to_use = [] if args.no_demos else DEMO_TRIPLES
@@ -705,6 +755,11 @@ def run(args):
 
 
     processed = 0
+    total_vlm_calls = 0
+    total_reused_calls = 0   # skip 실험할 때만 의미 있음
+    image_times = []
+    per_image_stats = []
+
     for _num, data in dataset.iterrows():
 
         if _num < part_point[part_num] or _num >= part_point[part_num+1]:
@@ -718,6 +773,11 @@ def run(args):
         else:
             neg_embeddings = None 
 
+        #!
+        last_vlm_image = None
+        last_neg_prompt = None
+        last_neg_embeddings = None
+        reuse_count = 0
 
         if "adv_prompt" in data:
             obj_prompt = data['adv_prompt']
@@ -753,6 +813,12 @@ def run(args):
 
         print(f"number: {_num}, prompt: {obj_prompt}, seed: {seed}")
 
+        #!
+        image_vlm_calls = 0
+        image_reused_calls = 0
+        if torch.cuda.is_available():
+            torch.cuda.synchronize()
+        image_start = time.time()
 
 
         obj_embeddings = get_text_embedding(obj_prompt * args.batch_size)
@@ -783,19 +849,16 @@ def run(args):
 
         for i, t in tqdm(enumerate(scheduler.timesteps), colour="MAGENTA"):
 
-            
-
             a_bar_t = scheduler.alphas_cumprod[scheduler.timesteps[i]]
-
 
             # diffusion output for denoising
             vel_obj = get_vel(t, latents, [obj_embeddings])
             vel_uncond = get_vel(t, latents, [uncond_embeddings])
 
-
-
             # if i in args.vlm_step:
-            if (not args.fixed_neg_prompt) and (i in args.vlm_step):
+
+            #!
+            '''if (not args.fixed_neg_prompt) and (i in args.vlm_step):
                 # predicting denoised image
 
                 vf_obj = vel_uncond + guidance*(vel_obj - vel_uncond)
@@ -841,7 +904,79 @@ def run(args):
                     print("--------------------------------------------------------------")
                     neg_embeddings = get_text_embedding(neg_prompt * args.batch_size)
                 else:
-                    neg_embeddings = None
+                    neg_embeddings = None'''
+            if (not args.fixed_neg_prompt) and (i in args.vlm_step):
+                # 1) current denoised image prediction
+                vf_obj = vel_uncond + guidance * (vel_obj - vel_uncond)
+                predicted_latent = ((latents - torch.sqrt(1 - a_bar_t) * vf_obj) / torch.sqrt(a_bar_t))
+                current_img = get_image(predicted_latent, 1, 1)
+
+                # 2) decide whether to reuse previous negative prompt
+                do_vlm_call = True
+                sim_score = None
+
+                #!
+                '''if last_vlm_image is not None:
+                    sim_score = compute_image_similarity(
+                        last_vlm_image,
+                        current_img,
+                        sim_model,
+                        sim_processor,
+                        device,
+                    )'''
+                if use_similarity_skip and last_vlm_image is not None:
+                    sim_score = compute_image_similarity(
+                        last_vlm_image,
+                        current_img,
+                        sim_model,
+                        sim_processor,
+                        device,
+                    )
+
+                    if sim_score >= args.sim_threshold and reuse_count < args.force_vlm_every:
+                        do_vlm_call = False
+
+                # 3) either call VLM or reuse cached prompt
+                if do_vlm_call:
+                    vlm_output = generate_neg(model, processor, demos_to_use, current_img, obj_prompt, device)
+
+                    #!
+                    image_vlm_calls += 1
+                    total_vlm_calls += 1
+
+                    print("--------------------------------------------------------------")
+                    print("Generated following vlm output")
+                    print(vlm_output)
+                    print("--------------------------------------------------------------")
+
+                    neg_prompt = vlm_output_to_neg_prompt(vlm_output)
+
+                    if neg_prompt is not None:
+                        print("--------------------------------------------------------------")
+                        print("Generated following negative prompt")
+                        print(neg_prompt)
+                        print("--------------------------------------------------------------")
+                        neg_embeddings = get_text_embedding(neg_prompt * args.batch_size)
+                    else:
+                        neg_embeddings = None
+
+                    last_vlm_image = current_img.copy()
+                    last_neg_prompt = neg_prompt
+                    last_neg_embeddings = neg_embeddings
+                    reuse_count = 0
+
+                    print(f"[VLM CALL] step={i}, sim={sim_score}")
+                else:
+                    neg_prompt = last_neg_prompt
+                    neg_embeddings = last_neg_embeddings
+                    reuse_count += 1
+                    image_reused_calls += 1
+                    total_reused_calls += 1
+
+                    print("--------------------------------------------------------------")
+                    print(f"[REUSE] step={i}, sim={sim_score}")
+                    print(f"Reusing negative prompt: {neg_prompt}")
+                    print("--------------------------------------------------------------")
                 # print(neg_prompt)
 
 
@@ -879,12 +1014,35 @@ def run(args):
         final_image.save(PATH + "/" + subdir + f"/{_num}.png")
         
         processed += 1
+
+        #!
+        if torch.cuda.is_available():
+            torch.cuda.synchronize()
+        image_time = time.time() - image_start
+        image_times.append(image_time)
+        
+        print(
+            f"[IMAGE {_num}] time={image_time:.3f}s, "
+            f"vlm_calls={image_vlm_calls}, reused={image_reused_calls}"
+        )
+
+        #!
+        per_image_stats.append(
+            {
+                "image_index": int(_num),
+                "image_path": str(Path(PATH) / subdir / f"{_num}.png"),
+                "inference_time_sec": float(image_time),
+                "vlm_calls": int(image_vlm_calls),
+                "reused_calls": int(image_reused_calls),
+                "prompt": str(obj_prompt),
+                "seed": int(seed),
+            }
+        )
+
         if args.max_samples is not None and processed >= args.max_samples:
             print(f"Reached --max_samples={args.max_samples}; stopping early.")
             break
 
-
-        
         ######################################## denoising steps ###########################################################
         ####################################################################################################################
         
@@ -895,12 +1053,38 @@ def run(args):
     
     end_time = time.time()  # Record the end time
     execution_time = end_time - start_time  # Calculate the time taken
-    print(f"The function took {execution_time:.4f} seconds to run.")
     
-    # mixed_samples = get_batch(latents, 1, args.batch_size)
-    # image_list = get_batch_list(latent_list)
+    #!
+    avg_inference_time = execution_time / processed if processed > 0 else 0.0
+    avg_vlm_calls = total_vlm_calls / processed if processed > 0 else 0.0
+    avg_reused_calls = total_reused_calls / processed if processed > 0 else 0.0
 
+    stats = {
+        "output_dir": str(Path(PATH) / subdir),
+        "num_processed_images": int(processed),
+        "total_inference_time_sec": float(execution_time),
+        "average_inference_time_sec": float(avg_inference_time),
+        "total_vlm_calls": int(total_vlm_calls),
+        "average_vlm_calls_per_image": float(avg_vlm_calls),
+        "total_reused_calls": int(total_reused_calls),
+        "average_reused_calls_per_image": float(avg_reused_calls),
+        "num_inference_steps": int(args.num_inference_steps),
+        "vlm_steps": [int(x) for x in args.vlm_step] if args.vlm_step is not None else [],
+        "neg_guidance": float(args.neg_guidance),
+        "use_similarity_skip": bool(use_similarity_skip),
+        "sim_threshold": float(args.sim_threshold) if use_similarity_skip else None,
+        "force_vlm_every": int(args.force_vlm_every) if use_similarity_skip else None,
+        "vlm_model_id": str(args.vlm_model_id),
+        "sim_model_id": str(args.sim_model_id) if use_similarity_skip else None,
+        "per_image_stats": per_image_stats,
+    }
 
+    stats_path = Path(PATH) / subdir / "inference_stats.json"
+    with open(stats_path, "w", encoding="utf-8") as f:
+        json.dump(stats, f, indent=2, ensure_ascii=False)
+
+    print(f"The function took {execution_time:.4f} seconds to run.")
+    print(f"Saved inference stats to: {stats_path}")
     print("Inference done.")
 
 
@@ -959,7 +1143,15 @@ def main():
     parser.add_argument("--total", type=int, default=1)
     parser.add_argument("--num_start", type=int, default=0)
 
-
+    #!
+    parser.add_argument("--sim_threshold", type=float, default=0.985,
+                    help="Reuse previous negative prompt when image similarity >= threshold")
+    parser.add_argument("--sim_model_id", type=str, default="openai/clip-vit-base-patch32",
+                        help="Image encoder used for similarity gating")
+    parser.add_argument("--force_vlm_every", type=int, default=2,
+                        help="Force one fresh VLM call after this many consecutive reuses")
+    parser.add_argument("--vlm_model_id", type=str, default="Qwen/Qwen2.5-VL-7B-Instruct",
+                        help="VLM model id")
 
     args = parser.parse_args()
 

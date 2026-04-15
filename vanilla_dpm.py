@@ -20,7 +20,7 @@ import os
 from tqdm import tqdm
 import re
 
-PATH = "/ext2/yschoi2/results_super_diff/"
+PATH = "/ext_hdd/sjkim/results_super_diff/"
 
 dtype = torch.float32
 device = torch.device("cuda:0")
