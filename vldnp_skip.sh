@@ -1,8 +1,7 @@
 # ===== fixed settings =====
 OBJ="ring-a-bell-16"
-MAX_SAMPLES=16
-ROOT_DIR="results_qwen3vl4b_skip"
-GUIDANCES=("7.5" "20.0" "25.0")
+ROOT_DIR="results_vldnp_skip"
+GUIDANCES=("7.5" "15.0" "20.0")
 
 # optional: activate conda env
 # source ~/anaconda3/etc/profile.d/conda.sh
@@ -20,7 +19,6 @@ for NG in "${GUIDANCES[@]}"; do
     --vlm_step 5 6 7 9 12 16 21 27 34 42 \
     --obj "${OBJ}" \
     --neg_guidance "${NG}" \
-    --max_samples "${MAX_SAMPLES}" \
     --vlm_model_id Qwen/Qwen3-VL-4B-Instruct \
     --sim_threshold 0.95 \
     --force_vlm_every 100 

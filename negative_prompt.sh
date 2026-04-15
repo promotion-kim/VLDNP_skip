@@ -1,8 +1,7 @@
 # ===== fixed settings =====
 OBJ="ring-a-bell-16"
-MAX_SAMPLES=16
 ROOT_DIR="results_static_neg"
-GUIDANCES=("7.5" "15.0" "20.0")
+GUIDANCES=("0.0" "7.5" "15.0" "20.0")
 
 # optional: activate conda env
 # source ~/anaconda3/etc/profile.d/conda.sh
@@ -18,8 +17,7 @@ for NG in "${GUIDANCES[@]}"; do
   python negative_prompt.py \
     --path "${ROOT_DIR}" \
     --obj "${OBJ}" \
-    --neg_guidance "${NG}" \
-    --max_samples "${MAX_SAMPLES}"
+    --neg_guidance "${NG}"
 
   OUT_DIR="${ROOT_DIR}/${OBJ}_negative_guidance_${NG}_dpm_neg_prompt_sampling"
 

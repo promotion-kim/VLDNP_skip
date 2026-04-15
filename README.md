@@ -119,3 +119,14 @@ python nudity_eval.py \
 ```
 * `--dir`	directory of images to be evaluated.
 After evaluation, it will output Attack Success Rate and Toxic Rate.
+
+To evaluate CLIP score,
+
+```bash
+# Nudity evaluation using Nudenet Classifier
+python clip_eval.py \
+	--image_dir ./results/dir \
+  --csv_path ./prompt_set/prompt.csv
+```
+* `--image_dir`	directory of images to be evaluated.
+* `--csv_path`	directory of prompts to be evaluated.
