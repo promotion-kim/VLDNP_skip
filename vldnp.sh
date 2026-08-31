@@ -21,7 +21,7 @@ for NG in "${GUIDANCES[@]}"; do
     --neg_guidance "${NG}" \
     --vlm_model_id Qwen/Qwen3-VL-4B-Instruct
 
-  OUT_DIR="${ROOT_DIR}/${OBJ}_negative_guidance_${NG}_dpm_neg_prompt_sampling"
+  OUT_DIR="${ROOT_DIR}/${OBJ}_negative_guidance_${NG}_dpm_vlm_sampling"
 
   echo "Saved images/results to: ${OUT_DIR}"
 done

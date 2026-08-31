@@ -727,7 +727,6 @@ def run(args):
         dtype=torch.float16 if device.type == "cuda" else torch.float32,
         attn_implementation="sdpa" if device.type == "cuda" else None,
         trust_remote_code=True,
-        cache_dir="/ext_hdd/sjkim/qwen"
     ).eval()
 
     #!
@@ -1144,13 +1143,13 @@ def main():
     parser.add_argument("--num_start", type=int, default=0)
 
     #!
-    parser.add_argument("--sim_threshold", type=float, default=0.985,
-                    help="Reuse previous negative prompt when image similarity >= threshold")
+    parser.add_argument("--sim_threshold", type=float, default=None,
+                    help="Enable similarity gating and reuse the previous negative prompt when image similarity >= threshold")
     parser.add_argument("--sim_model_id", type=str, default="openai/clip-vit-base-patch32",
                         help="Image encoder used for similarity gating")
     parser.add_argument("--force_vlm_every", type=int, default=2,
                         help="Force one fresh VLM call after this many consecutive reuses")
-    parser.add_argument("--vlm_model_id", type=str, default="Qwen/Qwen2.5-VL-7B-Instruct",
+    parser.add_argument("--vlm_model_id", type=str, default="Qwen/Qwen3-VL-4B-Instruct",
                         help="VLM model id")
 
     args = parser.parse_args()

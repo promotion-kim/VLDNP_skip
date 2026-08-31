@@ -1,33 +1,28 @@
+# Internal public-SW submission materials (never publish)
+/공개 SW/
 
----
+# Large diffusion datasets and generated outputs
+/gen_ai_project/
+/results/
+/results_neg_prompt/
+/results_vldnp_skip/
+/classifier/
 
-### `.gitignore`
-
-```gitignore
-# ignore large diffusion datasets / outputs
-gen_ai_project/
-
-# python
+# Python
 __pycache__/
 *.py[cod]
 *.egg
 *.egg-info/
 dist/
 build/
-results/
-results_neg_prompt/
-classifier/
 
-# virtual-envs
+# Virtual environments
 .env
 .venv
 *.conda
-*.ipynb_checkpoints
+*.ipynb_checkpoints/
 
-# misc
+# Miscellaneous
 .DS_Store
 *.log
-
 *.codex
-
-
